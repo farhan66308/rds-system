@@ -1,17 +1,32 @@
 <?php
-// Database connection details
-$servername = "localhost"; // Hostname (usually 'localhost')
-$username = "root";        // Your MySQL username
-$password = "";            // Your MySQL password
-$dbname = "alliora";       // The name of the database you want to connect to
+class Database {
+    private $servername = "localhost";
+    private $username = "root";
+    private $password = "";
+    private $dbname = "eduor";
+    public $conn;
 
-// Create connection
-$conn = new mysqli($servername, $username, $password, $dbname);
+    public function __construct() {
+        $this->conn =  new mysqli(
+            $this->servername,
+            $this->username,
+            $this->password,
+            $this->dbname
+        );
 
-// Check the connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-} else {
-    //echo "Connected successfully to the database.";
+    if($this->conn->connect_error)
+    {
+        die("Connection failed" . $this->connection_error);   
+    }
+    else {
+        //echo "Connected successfully to database";
+    }
+
+    }
+    public function getConnection()
+    {
+        return $this->conn;
+    }
+    
 }
 ?>
