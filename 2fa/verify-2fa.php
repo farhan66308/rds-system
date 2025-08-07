@@ -1,10 +1,8 @@
 <?php
-require_once '../libs/GoogleAuthenticator.php';
-$g = new PHPGangsta_GoogleAuthenticator();
 session_start();
 require_once '../conn.php';
-
-$g = new \Sonata\GoogleAuthenticator\GoogleAuthenticator();
+require_once '../libs/GoogleAuthenticator.php';
+$g = new PHPGangsta_GoogleAuthenticator();
 
 $userID = $_SESSION['UserID'] ?? null;
 
@@ -24,7 +22,7 @@ $row = $result->fetch_assoc();
 $secret = $row['TwoFASecret'];
 $stmt->close();
 
-$secret = $user['TwoFASecret'];
+$secret = $row['TwoFASecret'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $code = trim($_POST['code']);
