@@ -178,12 +178,30 @@ $fullname = ($row && ($row['FirstName'] || $row['LastName']))
       </a>
 
       <!-- Announcements -->
-      <a href="announcement.html" class="card bg-white hover:bg-indigo-50 transition-all shadow-md rounded-lg hover:shadow-xl transform hover:scale-105">
-        <div class="card-body items-center text-center">
-          <i class="fas fa-bullhorn text-4xl text-indigo-500 mb-3"></i>
-          <h2 class="text-xl font-semibold">Announcements</h2>
-        </div>
-      </a>
+<div class="relative group">
+  <a href="announcement.html" 
+     class="card bg-white hover:bg-indigo-50 transition-all shadow-md rounded-lg hover:shadow-xl transform hover:scale-105 block">
+    <div class="card-body items-center text-center">
+      <i class="fas fa-bullhorn text-4xl text-indigo-500 mb-3"></i>
+      <h2 class="text-xl font-semibold">Announcements</h2>
+    </div>
+  </a>
+
+  <!-- Dropdown menu -->
+  <div
+    class="absolute left-1/2 -translate-x-1/2 mt-2 w-48 bg-white rounded-lg shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity z-20"
+  >
+    <a href="announcement.html" 
+       class="block px-4 py-2 hover:bg-indigo-100 text-indigo-700 font-semibold rounded-t-lg text-center cursor-pointer">
+       Show Announcement
+    </a>
+    <a href="create-announce.php" 
+       class="block px-4 py-2 hover:bg-indigo-100 text-indigo-700 font-semibold text-center cursor-pointer">
+       Create Announcement
+    </a>
+  </div>
+</div>
+
 
       <!-- Transactions -->
       <a href="transaction.html" class="card bg-white hover:bg-rose-50 transition-all shadow-md rounded-lg hover:shadow-xl transform hover:scale-105">
