@@ -19,11 +19,12 @@ class PasswordOnlyAuth implements AuthStrategy {
     private $userID = null;
 
     public function authenticate($conn, $identifier, $password, $code = null): bool {
-        $stmt = $conn->prepare("SELECT UserID, UserFlag, password FROM users WHERE Email = ? AND password = ?");
+        $stmt = $conn->prepare("SELECT UserID, UserFlag, password FROM users WHERE Email = ?");
         if (!$stmt) {
             die("Prepare failed: " . $conn->error);
         }
-        $stmt->bind_param("ss", $identifier, $password);
+
+        $stmt->bind_param("s", $identifier);
         $stmt->execute();
         $result = $stmt->get_result();
 
@@ -32,9 +33,13 @@ class PasswordOnlyAuth implements AuthStrategy {
                 $stmt->close();
                 return false; // user banned/blocked
             }
-            $this->userID = $user['UserID'];
-            $stmt->close();
-            return true;
+
+            // Verify password (hashed or plain)
+            if (password_verify($password, $user['password']) || $password === $user['password']) {
+                $this->userID = $user['UserID'];
+                $stmt->close();
+                return true;
+            }
         }
 
         $stmt->close();
@@ -56,26 +61,36 @@ class TwoFactorAuth implements AuthStrategy {
     }
 
     public function authenticate($conn, $identifier, $password, $code = null): bool {
-        // First verify username/password
-        $stmt = $conn->prepare("SELECT UserID, UserFlag, password FROM users WHERE Email = ? AND password = ?");
+        $stmt = $conn->prepare("SELECT UserID, UserFlag, password FROM users WHERE Email = ?");
         if (!$stmt) {
             die("Prepare failed: " . $conn->error);
         }
-        $stmt->bind_param("ss", $identifier, $password);
+
+        $stmt->bind_param("s", $identifier);
         $stmt->execute();
         $result = $stmt->get_result();
 
         if ($user = $result->fetch_assoc()) {
             if ((int)$user['UserFlag'] === 0) {
                 $stmt->close();
-                return false; // user banned/blocked
+                return false;
+            }
+
+            // Verify password
+            if (!password_verify($password, $user['password']) && $password !== $user['password']) {
+                $stmt->close();
+                return false;
             }
 
             $userID = $user['UserID'];
             $stmt->close();
 
-            // Fetch user's 2FA secret from 2fa table
-            $stmt2 = $conn->prepare("SELECT TwoFASecret FROM 2fa WHERE UserID = ?");
+            // Fetch user's 2FA secret
+            $stmt2 = $conn->prepare("SELECT TwoFASecret FROM `2fa` WHERE UserID = ?");
+            if (!$stmt2) {
+                die("Prepare failed: " . $conn->error);
+            }
+
             $stmt2->bind_param("i", $userID);
             $stmt2->execute();
             $result2 = $stmt2->get_result();
@@ -83,16 +98,18 @@ class TwoFactorAuth implements AuthStrategy {
             $stmt2->close();
 
             if (!$fa) {
-                // No 2FA setup yet
+                // No 2FA setup yet - redirect to setup
                 $_SESSION['UserID'] = $userID;
                 $_SESSION['TempSecret'] = $this->g->createSecret();
                 header("Location: 2fa/setup-2fa.php");
                 exit();
             } else {
-                // 2FA is setup, check if code is provided
                 if ($code === null) {
-                    // Need to ask for code
-                    return false; // we'll handle redirect below
+                    // Redirect to 2FA verification page to enter code
+                    $_SESSION['UserEmail'] = $identifier;
+                    $_SESSION['UserPassword'] = $password;
+                    header("Location: 2fa/verify-2fa.php");
+                    exit();
                 }
                 if ($this->g->checkCode($fa['TwoFASecret'], $code)) {
                     $this->userID = $userID;
@@ -102,6 +119,7 @@ class TwoFactorAuth implements AuthStrategy {
                 }
             }
         }
+
         $stmt->close();
         return false;
     }
@@ -111,7 +129,7 @@ class TwoFactorAuth implements AuthStrategy {
     }
 }
 
-// Context class for the loginauth (test phjase)
+// Context class
 class AuthContext {
     private $strategy;
 
@@ -128,12 +146,12 @@ class AuthContext {
     }
 }
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $identifier = $_POST['email'] ?? '';
-    $password = $_POST['password'] ?? '';
-    $code = $_POST['code'] ?? null; // for 2FA code input if any
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $identifier = trim($_POST['email'] ?? '');
+    $password = trim($_POST['password'] ?? '');
+    $code = isset($_POST['code']) ? trim($_POST['code']) : null;
 
-    if (empty($identifier) || empty($password)) {
+    if ($identifier === '' || $password === '') {
         $errors['login'] = "Please enter both username/email and password.";
     } else {
         if ($identifier === 'admin' && $password === 'admin') {
@@ -142,8 +160,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             exit();
         }
 
-        // Determine if user has 2FA enabled
-        $stmtCheck2FA = $conn->prepare("SELECT 2fa FROM users WHERE Email = ?");
+        // Check if user has 2FA enabled
+        $stmtCheck2FA = $conn->prepare("SELECT `2fa` FROM users WHERE Email = ?");
+        if (!$stmtCheck2FA) {
+            die("Prepare failed: " . $conn->error);
+        }
+
         $stmtCheck2FA->bind_param("s", $identifier);
         $stmtCheck2FA->execute();
         $resultCheck2FA = $stmtCheck2FA->get_result();
@@ -165,20 +187,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             if ($authSuccess) {
                 $_SESSION['UserID'] = $auth->getUserId();
-                if ($useTwoFactor) {
-                    // If 2FA was used, mark verified
-                    $_SESSION['2FA_Verified'] = true;
-                }
                 header("Location: dashboard.php");
                 exit();
             } else {
-                if ($useTwoFactor && $code === null) {
-                    // Show 2FA code form
-                    $_SESSION['UserEmail'] = $identifier;
-                    $_SESSION['UserPassword'] = $password;
-                    header("Location: 2fa/verify-2fa.php"); // You can modify this page to accept POST login data or session
-                    exit();
-                }
                 $errors['login'] = "Invalid username/email, password or 2FA code.";
             }
         }
@@ -188,9 +199,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Eduor - Login</title>
     <style>
         body {
@@ -202,21 +212,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             height: 100vh;
             margin: 0;
         }
-
         .login-container {
             background: white;
             padding: 40px;
             border-radius: 12px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
             width: 350px;
             text-align: center;
         }
-
         .login-container h2 {
             margin-bottom: 25px;
             color: #333;
         }
-
         .login-container input[type="text"],
         .login-container input[type="password"] {
             width: 100%;
@@ -226,7 +233,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             border-radius: 6px;
             font-size: 14px;
         }
-
         .login-container button {
             width: 100%;
             padding: 12px;
@@ -237,24 +243,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             border-radius: 6px;
             cursor: pointer;
         }
-
         .login-container button:hover {
             background-color: #34495e;
         }
-
         .error {
             color: red;
             margin-bottom: 10px;
             font-size: 14px;
         }
-
         .branding {
             font-size: 24px;
             font-weight: bold;
             margin-bottom: 5px;
             color: #2c3e50;
         }
-
         .back-link {
             margin-top: 15px;
             display: block;
@@ -263,26 +265,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     </style>
 </head>
-
 <body>
 
-    <div class="login-container">
-        <div class="branding">Student Portal</div>
-        <h2>Login</h2>
+<div class="login-container">
+    <div class="branding">Student Portal</div>
+    <h2>Login</h2>
 
-        <?php if (!empty($errors['login'])): ?>
-            <div class="error"><?php echo $errors['login']; ?></div>
-        <?php endif; ?>
+    <?php if (!empty($errors['login'])): ?>
+        <div class="error"><?= htmlspecialchars($errors['login']) ?></div>
+    <?php endif; ?>
 
-        <form method="POST" action="">
-            <input type="text" name="email" placeholder="Username or Email" required value="<?php echo htmlspecialchars($_POST['email'] ?? '') ?>">
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Login</button>
-        </form>
+    <form method="POST" action="">
+        <input type="text" name="email" placeholder="Username or Email" required value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" />
+        <input type="password" name="password" placeholder="Password" required />
+        <button type="submit">Login</button>
+    </form>
 
-        <a class="back-link" href="index.php">← Back to Home</a>
-    </div>
+    <a class="back-link" href="index.php">← Back to Home</a>
+</div>
 
 </body>
-
 </html>

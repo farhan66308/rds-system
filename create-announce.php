@@ -45,7 +45,11 @@ class AnnouncementSubject implements Subject {
         $this->observers = [];
         $sql = "SELECT UserID FROM enrolled WHERE CourseID = ? AND Role = 'Student'";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("i", $courseID);
+        if (!$stmt) {
+            die("Prepare failed: " . htmlspecialchars($conn->error));
+        }
+        // Since CourseID is VARCHAR, use 's' for bind_param
+        $stmt->bind_param("s", $courseID);
         $stmt->execute();
         $result = $stmt->get_result();
         while ($row = $result->fetch_assoc()) {
@@ -71,6 +75,10 @@ class StudentObserver implements Observer {
     public function update($announcement) {
         // Insert notification or record for student
         $stmt = $this->conn->prepare("INSERT INTO notifications (UserID, AnnouncementID, IsRead) VALUES (?, ?, 0)");
+        if (!$stmt) {
+            // Log error or handle failure silently
+            return;
+        }
         $stmt->bind_param("is", $this->userID, $announcement['AnnounceID']);
         $stmt->execute();
         $stmt->close();
@@ -82,13 +90,16 @@ function generateAnnounceID($length = 12) {
     $chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
     $id = '';
     for ($i = 0; $i < $length; $i++) {
-        $id .= $chars[random_int(0, strlen($chars) - 1)];
+            $id .= $chars[random_int(0, strlen($chars) - 1)];
     }
     return $id;
 }
 
 // Fetch faculty courses for dropdown
 $stmt = $conn->prepare("SELECT c.CourseID, c.CourseName FROM courses c JOIN enrolled e ON c.CourseID = e.CourseID WHERE e.UserID = ? AND e.Role = 'Faculty'");
+if (!$stmt) {
+    die("Prepare failed: " . htmlspecialchars($conn->error));
+}
 $stmt->bind_param("i", $userID);
 $stmt->execute();
 $facultyCourses = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -105,21 +116,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validate inputs
     if (!$title) $errors[] = "Title is required.";
     if (!$description) $errors[] = "Description is required.";
-    if (!$courseID || !in_array($courseID, array_column($facultyCourses, 'CourseID'))) $errors[] = "Invalid course selected.";
+
+    // Corrected validation: compare as strings because CourseID is VARCHAR
+    $validCourseIDs = array_column($facultyCourses, 'CourseID');
+    if (!$courseID || !in_array($courseID, $validCourseIDs, true)) {
+        $errors[] = "Invalid course selected.";
+    }
 
     if (empty($errors)) {
         // Generate AnnounceID and insert announcement
         $announceID = generateAnnounceID();
 
-        $stmt = $conn->prepare("INSERT INTO annoucement (AnnounceID, AuthorUserID, FromCourseID, Description, DateUpload, Title) VALUES (?, ?, ?, ?, NOW(), ?)");
-        $date = '2025-08-09';
-       $stmt->bind_param("sssss", $announceID, $userID, $courseID, $description, $title);
-       if ($stmt === false) {
-    die("Prepare failed: " . htmlspecialchars($conn->error));
-}
+        $stmt = $conn->prepare("INSERT INTO annoucement (AnnouceID, AuthorUserID, FromCourseID, Description, DateUpload, Title) VALUES (?, ?, ?, ?, NOW(), ?)");
+        if (!$stmt) {
+            die("Prepare failed: " . htmlspecialchars($conn->error));
+        }
+        // Bind parameters types: AnnouceID (string), AuthorUserID (int), FromCourseID (string), Description (string), Title (string)
+        // Note the change in bind_param: 's' for FromCourseID
+        $stmt->bind_param("sissi", $announceID, $userID, $courseID, $description, $title);
+
 
         if ($stmt->execute()) {
-            // 
             $announcement = [
                 'AnnounceID' => $announceID,
                 'AuthorUserID' => $userID,
@@ -135,26 +152,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $success = true;
         } else {
-            $errors[] = "Failed to post announcement: " . $stmt->error;
+            $errors[] = "Failed to post announcement: " . htmlspecialchars($stmt->error);
         }
         $stmt->close();
     }
 }
-
 ?>
 
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Create Announcement</title>
-  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Create Announcement</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-100 to-yellow-200 flex items-center justify-center">
 
-  <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-xl">
+<div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-xl">
     <h1 class="text-3xl font-bold mb-6">Create Announcement</h1>
 
     <?php if ($success): ?>
@@ -164,46 +180,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <?php if ($errors): ?>
-      <div class="alert alert-error mb-4">
-        <ul class="list-disc list-inside">
-          <?php foreach ($errors as $e): ?>
-            <li><?php echo htmlspecialchars($e); ?></li>
-          <?php endforeach; ?>
-        </ul>
-      </div>
+        <div class="alert alert-error mb-4">
+            <ul class="list-disc list-inside">
+                <?php foreach ($errors as $e): ?>
+                    <li><?php echo htmlspecialchars($e); ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
     <?php endif; ?>
 
     <form method="POST" action="" class="space-y-4">
-      <div>
-        <label class="label"><span class="label-text font-semibold">Title</span></label>
-        <input type="text" name="title" required
-               class="input input-bordered w-full"
-               value="<?php echo htmlspecialchars($_POST['title'] ?? '') ?>">
-      </div>
+        <div>
+            <label class="label"><span class="label-text font-semibold">Title</span></label>
+            <input type="text" name="title" required
+                   class="input input-bordered w-full"
+                   value="<?php echo htmlspecialchars($_POST['title'] ?? '') ?>">
+        </div>
 
-      <div>
-        <label class="label"><span class="label-text font-semibold">Description</span></label>
-        <textarea name="description" required
-                  class="textarea textarea-bordered w-full"
-                  rows="5"><?php echo htmlspecialchars($_POST['description'] ?? '') ?></textarea>
-      </div>
+        <div>
+            <label class="label"><span class="label-text font-semibold">Description</span></label>
+            <textarea name="description" required
+                      class="textarea textarea-bordered w-full"
+                      rows="5"><?php echo htmlspecialchars($_POST['description'] ?? '') ?></textarea>
+        </div>
 
-      <div>
-        <label class="label"><span class="label-text font-semibold">Select Course</span></label>
-        <select name="course" required class="select select-bordered w-full">
-          <option value="" disabled selected>Select a course</option>
-          <?php foreach ($facultyCourses as $course): ?>
-            <option value="<?php echo $course['CourseID'] ?>"
-                <?php echo (isset($_POST['course']) && $_POST['course'] == $course['CourseID']) ? 'selected' : '' ?>>
-              <?php echo htmlspecialchars($course['CourseName']) ?>
-            </option>
-          <?php endforeach; ?>
-        </select>
-      </div>
+        <div>
+            <label class="label"><span class="label-text font-semibold">Select Course</span></label>
+            <select name="course" required class="select select-bordered w-full">
+                <option value="" disabled <?php echo !isset($_POST['course']) ? 'selected' : '' ?>>Select a course</option>
+                <?php foreach ($facultyCourses as $course): ?>
+                    <option value="<?php echo $course['CourseID'] ?>"
+                        <?php echo (isset($_POST['course']) && $_POST['course'] === $course['CourseID']) ? 'selected' : '' ?>>
+                        <?php echo htmlspecialchars($course['CourseName']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
 
-      <button type="submit" class="btn btn-primary w-full">Post Announcement</button>
+        <button type="submit" class="btn btn-primary w-full">Post Announcement</button>
     </form>
-  </div>
+</div>
 
 </body>
 </html>
