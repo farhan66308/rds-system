@@ -1,5 +1,5 @@
 <?php
-class PasswordOnlyAuth implements AuthStrategy {
+class Password OnlyAuth implements AuthStrategy {
     private $conn;
     private $user;
 
