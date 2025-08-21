@@ -60,7 +60,7 @@ $userEmail = $row['Email'] ?? 'N/A';
                 <a href="#"><i class="fa fa-check-circle"></i> Info</a>
                 <ul class="submenu">
                     <li><a href="profile.php">Profile</a></li>
-                    <li><a href="#">Edit</a></li>
+                    <li><a href="editprofile.php">Edit</a></li>
                 </ul>
             </li>
             <li class="menu-item has-submenu">
@@ -99,8 +99,8 @@ $userEmail = $row['Email'] ?? 'N/A';
                     <li><a href="#">Track your support</a></li>
                 </ul>
             </li>
-            <li><a href="#"><i class="fa fa-cog"></i> Settings</a></li>
-            <li><a href="#"><i class="fa fa-power-off"></i> Logout</a></li>
+            <li><a href="settings.php"><i class="fa fa-cog"></i> Settings</a></li>
+            <li><a href="logout.php"><i class="fa fa-power-off"></i> Logout</a></li>
         </ul>
     </div>
 
