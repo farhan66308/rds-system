@@ -14,9 +14,9 @@ $userID = $_SESSION['UserID'];
 
 // Fetch FirstName and LastName from DB
 $sql = "SELECT s.FirstName, s.LastName
-        FROM users u
-        JOIN studentinfo s ON s.UserID = u.UserID
-        WHERE u.UserID = ?";
+    FROM users u
+    JOIN studentinfo s ON s.UserID = u.UserID
+    WHERE u.UserID = ?";
 $stmt = $conn->prepare($sql);
 if (!$stmt) {
     die("Prepare failed: " . $conn->error);
