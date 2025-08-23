@@ -1,5 +1,5 @@
 <?php
-require_once 'conn.php';
+require_once '../conn.php';
 $db = new Database();
 $conn = $db->getConnection();
 session_start();
@@ -30,6 +30,23 @@ $stmt->close();
 $fullname = ($row && ($row['FirstName'] || $row['LastName']))
     ? htmlspecialchars(trim($row['FirstName'] . ' ' . $row['LastName']))
     : 'User';
+
+// --- START: Email Fetching Logic ---
+$userEmail = 'N/A'; // Default value
+$sql_email = "SELECT Email FROM users WHERE UserID = ?";
+$stmt_email = $conn->prepare($sql_email);
+if ($stmt_email) {
+    $stmt_email->bind_param("i", $userID);
+    $stmt_email->execute();
+    $result_email = $stmt_email->get_result();
+    $email_row = $result_email->fetch_assoc();
+    if ($email_row) {
+        $userEmail = htmlspecialchars($email_row['Email']);
+    }
+    $stmt_email->close();
+}
+// --- END: Email Fetching Logic ---
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -49,11 +66,6 @@ $fullname = ($row && ($row['FirstName'] || $row['LastName']))
             <span class="menu-btn" onclick="toggleSidebar()"><i class="fa fa-bars"></i></span>
             <img src="https://dummyimage.com/200x40/004080/ffffff&text=Eduor+System" alt="Eduor Logo" class="logo">
         </div>
-        <div class="navbar-right">
-            <img src="https://rds3.northsouth.edu/assets/images/avatars/profile-pic.jpg" class="user-pic">
-            <span class="welcome">Welcome, <?= $_SESSION['UserName'] ?? "Guest"; ?></span>
-            <a href="logout.php" class="logout"><i class="fa fa-power-off"></i> Logout</a>
-        </div>
     </div>
 
     <div class="sidebar" id="sidebar">
@@ -62,53 +74,46 @@ $fullname = ($row && ($row['FirstName'] || $row['LastName']))
             <li class="menu-item has-submenu">
                 <a href="#"><i class="fa fa-check-circle"></i> Info</a>
                 <ul class="submenu">
-                    <li><a href="#">Profile</a></li>
-                    <li><a href="#">Edit</a></li>
+                    <li><a href="../profile.php">Profile</a></li>
+                    <li><a href="../editprofile.php">Edit</a></li>
                 </ul>
             </li>
             <li class="menu-item has-submenu">
                 <a href="#"><i class="fa fa-book"></i> Courses</a>
                 <ul class="submenu">
-                    <li><a href="#">Manage</a></li>
-                    <li><a href="#">Advising</a></li>
-                    <li><a href="#">Grade History</a></li>
+                    <li><a href="viewcourse.php">Manage</a></li>
+                    <li><a href="takeattendance.php">Take Attendance</a></li>
+                    <li><a href="publishgrades.php">Publish Grades</a></li>
                 </ul>
             </li>
             <li class="menu-item has-submenu">
                 <a href="#"><i class="fa fa-graduation-cap"></i> Learning</a>
                 <ul class="submenu">
-                    <li><a href="#">Courses</a></li>
-                    <li><a href="#">Payment History</a></li>
+                    <li><a href="#">Course Modules</a></li>
                 </ul>
             </li>
             <li class="menu-item has-submenu">
                 <a href="#"><i class="fa fa-calendar"></i> Announcements</a>
                 <ul class="submenu">
-                    <li><a href="#">Create Annoucements</a></li>
+                    <li><a href="../create-announce.php">Create Annoucements</a></li>
                     <li><a href="#">Show Annoucement</a></li>
-                </ul>
-            </li>
-            <li class="menu-item has-submenu">
-                <a href="#"><i class="fa fa-money-bill"></i> Transactions</a>
-                <ul class="submenu">
-                    <li><a href="#">Bill</a></li>
-                    <li><a href="#">Payment History</a></li>
                 </ul>
             </li>
             <li class="menu-item has-submenu">
                 <a href="#"><i class="fa fa-envelope"></i> Support</a>
                 <ul class="submenu">
-                    <li><a href="#">Create Ticket</a></li>
-                    <li><a href="#">Track your support</a></li>
+                    <li><a href="createticket.php">Create Ticket</a></li>
+                    <li><a href="trackticket.php">Track your support</a></li>
                 </ul>
             </li>
-            <li><a href="#"><i class="fa fa-cog"></i> Settings</a></li>
+            <li><a href="../settings.php"><i class="fa fa-cog"></i> Settings</a></li>
+            <li><a href="../logout.php"><i class="fa fa-cog"></i> Logout</a></li>
         </ul>
     </div>
 
     <div class="main-content" id="main-content">
         <div class="page-header">
-            <h1>Welcome, <?= $_SESSION['UserName'] ?? "Guest"; ?></h1>
+            <h1>Faculty</h1>
             <p>UserID: <?= $_SESSION['UserID'] ?? "N/A"; ?></p>
         </div>
 
@@ -116,47 +121,12 @@ $fullname = ($row && ($row['FirstName'] || $row['LastName']))
             <div class="profile-left">
                 <img src="https://rds3.northsouth.edu/assets/images/avatars/profile-pic.jpg" class="profile-pic">
                 <h2><?= $_SESSION['UserName'] ?? "Guest"; ?></h2>
-                <p>Email: john.doe@eduor.com</p>
-                <p>Program: BS in Computer Science</p>
-                <p>Curriculum: 140 Credit</p>
-            </div>
-
-            <div class="profile-right">
-                <h3>Faculty Advisor</h3>
-                <p><b>Name:</b> Dr. Smith</p>
-                <p><b>Email:</b> dr.smith@eduor.com</p>
-                <p><b>Office:</b> Room 210</p>
+                <p>Email: <?= $userEmail; ?></p> <!-- Dynamically display the fetched email -->
             </div>
         </div>
 
         <div class="activity-status">
-            <h3>Activity Status</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Activity</th>
-                        <th>Semester</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Faculty Evaluation</td>
-                        <td>Fall 2025</td>
-                        <td class="done">Done</td>
-                    </tr>
-                    <tr>
-                        <td>Preadvising</td>
-                        <td>Fall 2025</td>
-                        <td class="not-done">Not Done</td>
-                    </tr>
-                    <tr>
-                        <td>Payment</td>
-                        <td>Summer 2025</td>
-                        <td><button class="btn-view">View</button></td>
-                    </tr>
-                </tbody>
-            </table>
+            <h3>Good day!</h3>
         </div>
     </div>
 

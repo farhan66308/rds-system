@@ -103,7 +103,6 @@ $twoFASetupExists = ($row['cnt'] > 0);
   <div class="sidebar" id="sidebar">
       <ul>
           <li><a href="dash.php"><i class="fa fa-home"></i> Home</a></li>
-          <li><a href="profile.php"><i class="fa fa-user"></i> Profile</a></li>
           <li class="active"><a href="settings.php"><i class="fa fa-cog"></i> Settings</a></li>
           <li><a href="logout.php"><i class="fa fa-power-off"></i> Logout</a></li>
       </ul>

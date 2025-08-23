@@ -26,9 +26,10 @@ $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $code = trim($_POST['code'] ?? '');
 
-    if ($secret && $g->verifyCode($secret, $code, 2)) {
-        $_SESSION['2FA_Verified'] = true;
-        header("Location: ../dashboard.php");
+    // Use verifyCode with the correct secret from the database
+    if ($secret && $g->verifyCode($secret, $code)) { // Removed the drift parameter of 2, as it's not part of the standard usage
+        $_SESSION['2FA_Verified'] = true; // Set a flag to indicate successful verification
+        header("Location: ../Dash.php"); // Redirect to the dashboard
         exit();
     } else {
         $error = "Invalid code. Try again.";

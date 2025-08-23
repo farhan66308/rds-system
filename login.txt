@@ -1,7 +1,6 @@
 <?php
 require_once 'conn.php';
 require_once 'libs/GoogleAuthenticator.php';
-require_once 'Factory/UserActionFactory.php'; // Required for the Factory Pattern
 
 session_start();
 
@@ -10,27 +9,33 @@ $db = new Database();
 $conn = $db->getConnection();
 
 // Context class
-class AuthContext {
+class AuthContext
+{
     private $strategy;
 
-    public function __construct(AuthStrategy $strategy) {
+    public function __construct(AuthStrategy $strategy)
+    {
         $this->strategy = $strategy;
     }
 
-    public function authenticate($conn, $identifier, $password, $code = null): bool {
+    public function authenticate($conn, $identifier, $password, $code = null): bool
+    {
         return $this->strategy->authenticate($conn, $identifier, $password, $code);
     }
 
-    public function getUserId(): ?int {
+    public function getUserId(): ?int
+    {
         return $this->strategy->getUserId();
     }
 }
 
 // Password-only authentication strategy
-class PasswordOnlyAuth implements AuthStrategy {
+class PasswordOnlyAuth implements AuthStrategy
+{
     private $userID = null;
 
-    public function authenticate($conn, $identifier, $password, $code = null): bool {
+    public function authenticate($conn, $identifier, $password, $code = null): bool
+    {
         $stmt = $conn->prepare("SELECT UserID, UserFlag, password FROM users WHERE Email = ?");
         if (!$stmt) {
             die("Prepare failed: " . $conn->error);
@@ -57,20 +62,22 @@ class PasswordOnlyAuth implements AuthStrategy {
         return false;
     }
 
-    public function getUserId(): ?int {
+    public function getUserId(): ?int
+    {
         return $this->userID;
     }
 }
 
 // Interface class
-interface AuthStrategy {
+interface AuthStrategy
+{
     public function authenticate($conn, $identifier, $password, $code = null): bool;
     public function getUserId(): ?int;
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $identifier = trim($_POST['email'] ?? '');
-    $password   = trim($_POST['password'] ?? '');
+    $password = trim($_POST['password'] ?? '');
 
     if ($identifier === '' || $password === '') {
         $errors['login'] = "Please enter both username/email and password.";
@@ -81,38 +88,34 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             exit();
         }
 
-        // Check user credentials
-        $auth        = new AuthContext(new PasswordOnlyAuth());
+        // Check user credentials first
+        $auth = new AuthContext(new PasswordOnlyAuth());
         $authSuccess = $auth->authenticate($conn, $identifier, $password);
 
         if ($authSuccess) {
             $userID = $auth->getUserId();
 
-            // After successful password verification, check for 2FA and UserFlag
-            $stmtCheck2FA = $conn->prepare("SELECT 2fa, UserFlag FROM users WHERE UserID = ?");
+            // After successful password verification, check for 2FA status
+            $stmtCheck2FA = $conn->prepare("SELECT 2fa FROM users WHERE UserID = ?");
             if (!$stmtCheck2FA) {
                 die("Prepare failed: " . $conn->error);
             }
             $stmtCheck2FA->bind_param("i", $userID);
             $stmtCheck2FA->execute();
             $resultCheck2FA = $stmtCheck2FA->get_result();
-            $userAuthData   = $resultCheck2FA->fetch_assoc();
+            $user2FAData = $resultCheck2FA->fetch_assoc();
             $stmtCheck2FA->close();
 
-            $_SESSION['UserID'] = $userID;
-
-            if ((int)$userAuthData['2fa'] === 1) {
+            if ((int)$user2FAData['2fa'] === 1) {
                 // User has 2FA enabled, redirect to verification page
+                $_SESSION['UserID'] = $userID;
                 header("Location: 2fa/verify-2fa.php");
                 exit();
             } else {
-                // User does not have 2FA, use the Factory Pattern to redirect
-                try {
-                    $userAction = UserActionFactory::createAction($userAuthData['UserFlag']);
-                    $userAction->execute();
-                } catch (Exception $e) {
-                    $errors['login'] = "Login failed: " . $e->getMessage();
-                }
+                // User does not have 2FA, complete login
+                $_SESSION['UserID'] = $userID;
+                header("Location: Dash.php");
+                exit();
             }
         } else {
             $errors['login'] = "Invalid username/email or password.";
@@ -123,12 +126,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <title>Eduor - Login</title>
     <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
+
     <div class="navbar">
         <a href="#" class="logo">Eduor System</a>
         <div class="links">
@@ -160,5 +166,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             </div>
         </div>
     </div>
+
 </body>
+
 </html>

@@ -47,8 +47,6 @@ class StudentObserver implements Observer {
 
     // Define what happens when an announcement is pushed
     public function update($announcement) {
-        // Example: Save notification in DB for this user
-        // You could also send email or push notification here
 
         global $conn; // assuming $conn is accessible globally or pass as param
 

@@ -4,7 +4,6 @@ $db = new Database();
 $conn = $db->getConnection();
 session_start();
 
-// Redirect to login if not authenticated
 if (!isset($_SESSION['UserID'])) {
     header("Location: login.php");
     exit();
@@ -66,8 +65,8 @@ $userEmail = $row['Email'] ?? 'N/A';
             <li class="menu-item has-submenu">
                 <a href="#"><i class="fa fa-book"></i> Courses</a>
                 <ul class="submenu">
-                    <li><a href="#">Manage</a></li>
-                    <li><a href="#">Advising</a></li>
+                    <li><a href="courses/viewcourse.php">Manage</a></li>
+                    <li><a href="advising.php">Advising</a></li>
                     <li><a href="#">Grade History</a></li>
                 </ul>
             </li>
@@ -81,8 +80,7 @@ $userEmail = $row['Email'] ?? 'N/A';
             <li class="menu-item has-submenu">
                 <a href="#"><i class="fa fa-calendar"></i> Announcements</a>
                 <ul class="submenu">
-                    <li><a href="#">Create Announcements</a></li>
-                    <li><a href="#">Show Announcement</a></li>
+                    <li><a href="show-announcement.php">Show Announcement</a></li>
                 </ul>
             </li>
             <li class="menu-item has-submenu">
@@ -95,8 +93,8 @@ $userEmail = $row['Email'] ?? 'N/A';
             <li class="menu-item has-submenu">
                 <a href="#"><i class="fa fa-envelope"></i> Support</a>
                 <ul class="submenu">
-                    <li><a href="#">Create Ticket</a></li>
-                    <li><a href="#">Track your support</a></li>
+                    <li><a href="createticket.php">Create Ticket</a></li>
+                    <li><a href="trackticket.php">Track your support</a></li>
                 </ul>
             </li>
             <li><a href="settings.php"><i class="fa fa-cog"></i> Settings</a></li>
@@ -121,33 +119,7 @@ $userEmail = $row['Email'] ?? 'N/A';
         </div>
 
         <div class="activity-status">
-            <h3>Activity Status</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Activity</th>
-                        <th>Semester</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Faculty Evaluation</td>
-                        <td>Fall 2025</td>
-                        <td class="done">Done</td>
-                    </tr>
-                    <tr>
-                        <td>Preadvising</td>
-                        <td>Fall 2025</td>
-                        <td class="not-done">Not Done</td>
-                    </tr>
-                    <tr>
-                        <td>Payment</td>
-                        <td>Summer 2025</td>
-                        <td><button class="btn-view">View</button></td>
-                    </tr>
-                </tbody>
-            </table>
+            <h3>Good day</h3>
         </div>
     </div>
 
