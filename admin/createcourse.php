@@ -39,7 +39,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($count === 0) {
                 $errors[] = "The provided Course ID does not exist. Please create the course first.";
             } else {
-                // Instantiate the builder
                 $builder = new FullCourseBuilder();
 
                 // Build the course based on selected sections

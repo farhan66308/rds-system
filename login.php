@@ -9,7 +9,7 @@ $errors = [];
 $db = new Database();
 $conn = $db->getConnection();
 
-// Context class
+// Context class to set strategy
 class AuthContext {
     private $strategy;
 

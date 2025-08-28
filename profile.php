@@ -52,7 +52,6 @@ if ($fullname === '') $fullname = "User";
 
 <body>
 
-    <!-- TOP NAVBAR (same as dash.php) -->
     <div class="navbar">
         <div class="navbar-left">
             <span class="menu-btn" onclick="toggleSidebar()"><i class="fa fa-bars"></i></span>
@@ -60,7 +59,6 @@ if ($fullname === '') $fullname = "User";
         </div>
     </div>
 
-    <!-- SIDEBAR -->
     <div class="sidebar" id="sidebar">
         <ul>
             <li><a href="dash.php"><i class="fa fa-home"></i> Home</a></li>
@@ -69,13 +67,11 @@ if ($fullname === '') $fullname = "User";
             <li><a href="logout.php"><i class="fa fa-power-off"></i> Logout</a></li>
         </ul>
     </div>
-
-    <!-- MAIN CONTENT -->
     <div class="main-content" id="main-content">
         <section class="max-w-5xl mx-auto p-5">
             <h1 class="text-3xl font-bold mb-6">Your Information</h1>
 
-            <!-- Contact Info -->
+            
             <div class="mb-8 p-6 bg-white rounded-lg shadow-md">
                 <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Contact Information</h2>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -86,7 +82,7 @@ if ($fullname === '') $fullname = "User";
                 </div>
             </div>
 
-            <!-- Personal Info -->
+            
             <div class="mb-8 p-6 bg-white rounded-lg shadow-md">
                 <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Personal Information</h2>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

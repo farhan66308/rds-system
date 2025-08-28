@@ -4,15 +4,12 @@ $db = new Database();
 $conn = $db->getConnection();
 session_start();
 
-// Block access if not logged in + 2FA verified
 if (!isset($_SESSION['UserID'])) {
     header("Location: login.php");
     exit();
 }
 
 $userID = $_SESSION['UserID'];
-
-// Handle form submissions
 $message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -46,7 +43,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmt->execute()) {
             $message = $enable2FA ? "2FA enabled." : "2FA disabled.";
 
-            // Optional: if disabling 2FA, also delete from 2fa table
             if (!$enable2FA) {
                 $stmtDel = $conn->prepare("DELETE FROM 2fa WHERE UserID = ?");
                 $stmtDel->bind_param("i", $userID);

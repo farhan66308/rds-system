@@ -5,7 +5,6 @@ require_once '../conn.php';
 $db = new Database();
 $conn = $db->getConnection();
 
-// --- Faculty Authentication Check ---
 if (!isset($_SESSION['UserID'])) {
     header("Location: ../login.php"); // Redirect to login if not authenticated
     exit();
@@ -13,7 +12,6 @@ if (!isset($_SESSION['UserID'])) {
 
 $facultyUserID = $_SESSION['UserID'];
 
-// Verify if the logged-in user is a faculty member (UserFlag = 2)
 $sql_check_faculty = "SELECT UserFlag FROM users WHERE UserID = ?";
 $stmt_check_faculty = $conn->prepare($sql_check_faculty);
 if (!$stmt_check_faculty) {
@@ -30,10 +28,9 @@ if (!isset($user_info) || $user_info['UserFlag'] !== 2) {
     header("Location: ../dashboard.php"); // Or another appropriate dashboard
     exit();
 }
-// --- End Faculty Authentication Check ---
 
-$fullname = 'User'; // Default name for the navbar
-$userEmail = 'N/A'; // Default email for the navbar
+$fullname = 'User'; 
+$userEmail = 'N/A'; 
 
 // Fetch user's full name for the navbar/sidebar
 $sql_user_name = "SELECT FirstName, LastName FROM studentinfo WHERE UserID = ?";
@@ -49,7 +46,6 @@ if ($stmt_user_name) {
     $stmt_user_name->close();
 }
 
-// Fetch user's email from the 'users' table for the navbar/sidebar
 $sql_user_email = "SELECT Email FROM users WHERE UserID = ?";
 $stmt_user_email = $conn->prepare($sql_user_email);
 if ($stmt_user_email) {

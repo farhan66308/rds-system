@@ -18,7 +18,6 @@ $tickets = [];
 $feedbackSuccess = '';
 $feedbackError = '';
 
-// Handle feedback form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_feedback'])) {
     $ticketID = trim($_POST['ticketID'] ?? '');
     $feedback = trim($_POST['feedback'] ?? '');
@@ -61,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_feedback'])) {
 }
 
 
-// Retrieve tickets for the current user
+// Retrieve tickets 
 $sql = "SELECT TicketID, Description, Status, Feedback FROM tickets WHERE FromUserID = ?";
 $stmt = $conn->prepare($sql);
 

@@ -5,15 +5,13 @@ require_once 'conn.php';
 $db = new Database();
 $conn = $db->getConnection();
 
-// --- Faculty Authentication Check ---
 if (!isset($_SESSION['UserID'])) {
-    header("Location: ../login.php"); // Redirect to login if not authenticated
+    header("Location: ../login.php"); 
     exit();
 }
 
 $facultyUserID = $_SESSION['UserID'];
 
-// Verify if the logged-in user is a faculty member (UserFlag = 2)
 $sql_check_faculty = "SELECT UserFlag FROM users WHERE UserID = ?";
 $stmt_check_faculty = $conn->prepare($sql_check_faculty);
 if (!$stmt_check_faculty) {
@@ -25,11 +23,10 @@ $result_check_faculty = $stmt_check_faculty->get_result();
 $user_info = $result_check_faculty->fetch_assoc();
 $stmt_check_faculty->close();
 
-$fullname = 'User'; // Default name for the navbar
+$fullname = 'User'; 
 $message = '';
-$message_type = ''; // 'success' or 'error'
+$message_type = '';A
 
-// Fetch user's full name for the navbar/sidebar
 $sql_user_name = "SELECT FirstName, LastName FROM studentinfo WHERE UserID = ?";
 $stmt_user_name = $conn->prepare($sql_user_name);
 if ($stmt_user_name) {
@@ -43,7 +40,6 @@ if ($stmt_user_name) {
     $stmt_user_name->close();
 }
 
-// Fetch all courses for the dropdown
 $allCourses = [];
 $sql_all_courses = "SELECT CourseID, CourseName, Credits FROM courses ORDER BY CourseID";
 $stmt_all_courses = $conn->prepare($sql_all_courses);
@@ -59,7 +55,6 @@ if ($stmt_all_courses) {
     $message_type = 'error';
 }
 
-// Handle course advising submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['advise_course'])) {
     $selectedCourseID = $_POST['course_id'] ?? '';
 

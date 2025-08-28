@@ -1,5 +1,4 @@
 <?php
-// course_selection.php
 session_start();
 require_once '../conn.php';
 
@@ -17,7 +16,6 @@ $conn = $db->getConnection();
 $enrolledCourses = [];
 
 try {
-    // Query to get courses for the logged-in student
     $sql = "SELECT e.CourseID, e.Section, c.CourseName 
             FROM enrolled e
             JOIN courses c ON e.CourseID = c.CourseID

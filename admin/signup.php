@@ -2,14 +2,10 @@
 session_start();
 require_once '../conn.php';
 require_once '../libs/functions.php';
-
 $db = new Database();
 $conn = $db->getConnection();
-
 $errors = [];
 $success = '';
-
-// Initialize variables to prevent "Undefined variable" warnings
 $firstName = '';
 $lastName = '';
 $phone = '';
@@ -37,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = "Password must be at least 6 characters long.";
     }
 
-    // Check if the email already exists
+    // Check if the email exists in  db eduor
     if (empty($errors)) {
         $stmt = $conn->prepare("SELECT UserID FROM users WHERE Email = ?");
         $stmt->bind_param("s", $email);
@@ -49,7 +45,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->close();
     }
 
-    // If no validation errors, proceed with registration
     if (empty($errors)) {
         // Map UserType to a numerical value if your database requires it
         $typeMap = ['Student' => 1, 'Faculty' => 2, 'Accountant' => 3];
